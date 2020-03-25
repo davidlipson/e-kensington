@@ -1,4 +1,25 @@
 $(document).ready(function(){
+
+  var pusher = new Pusher('699f7eb715ff1922a8f2', {
+      cluster: 'us2',
+      forceTLS: true
+    });
+
+    var channel = pusher.subscribe('all');
+    channel.bind('client-waveNotification', function(data) {
+      console.log(data);
+    });
+
+
+  function makeid(length) {
+   var result           = '';
+   var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+   var charactersLength = characters.length;
+   for ( var i = 0; i < length; i++ ) {
+      result += characters.charAt(Math.floor(Math.random() * charactersLength));
+   }
+   return result;
+}
   var width;
   var height;
   var xMax = 75;
@@ -29,8 +50,9 @@ $(document).ready(function(){
   var cars = [];
 
   var user = {
-    x: 0,
-    y: 0,
+    x: Math.floor(Math.random() * Math.floor(xMax-1)),
+    y: Math.floor(Math.random() * Math.floor(yMax-1)),
+    id: makeid(6),
     username: null,
     isNeighbour: function(p){
       return (p.x <= this.x + 1) && (p.x >= this.x - 1) 
@@ -97,8 +119,9 @@ $(document).ready(function(){
       cn = this.neighbours();
       if(cn.length > 0){
         // WAVE HERE
+        cn.forEach(c => channel.trigger("client-waveNotification", {fromId: this.id, fromName: this.username, toName: c.username}))
         //fake bit
-        cn.forEach(n => $(`<div class="chat-message"> ${this.username} waved at ${n.username}.</div>`).appendTo("#chat-body").fadeOut(5000, function() {$(this).remove();}));
+        //cn.forEach(n => $(`<div class="chat-message"> ${this.username} waved at ${n.username}.</div>`).appendTo("#chat-body").fadeOut(5000, function() {$(this).remove();}));
 
         $(`<div class="chat-notice success">Sent a wave to ${this.neighbourString()}</div>`).appendTo("#chat-top").fadeOut(3000, function() {
           $(this).remove();
@@ -123,6 +146,8 @@ $(document).ready(function(){
       }
     }
   };
+
+  console.log(user.id);
 
   var ctx;
   var alive;
@@ -300,9 +325,6 @@ $(document).ready(function(){
     ctx = $("#canvas")[0].getContext('2d');
     height = $("#canvas").width();
     width = $("#canvas").height();
-
-    user.x = 10;
-    user.y = 10;
 
     //cycle = 0;
     redrawGame();
