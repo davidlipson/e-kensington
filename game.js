@@ -15,7 +15,18 @@ $(document).ready(function(){
   var walls = [{type: "y", c: "supermarket", start: {x:0,y:Math.floor(yMax/3)}, end: {x:Math.floor(xMax/2) - 15,y:Math.floor(yMax/3)}},
                {type: "y", c: "supermarket", start: {x:0,y:Math.floor(yMax/3) + 1}, end: {x:Math.floor(xMax/2) - 15,y:Math.floor(yMax/3) + 1}},
                {type: "x", c: "supermarket", start: {x:Math.floor(xMax/2) - 17,y:0}, end: {x:Math.floor(xMax/2) - 17,y:Math.floor(yMax/3) - 4}},
-               {type: "x", c: "supermarket", start: {x:Math.floor(xMax/2) - 16,y:0}, end: {x:Math.floor(xMax/2) - 16,y:Math.floor(yMax/3) - 4}}]
+               {type: "x", c: "supermarket", start: {x:Math.floor(xMax/2) - 16,y:0}, end: {x:Math.floor(xMax/2) - 16,y:Math.floor(yMax/3) - 4}},
+               {type: "y", c: "pamenar", start: {x:Math.floor(xMax/2) + 20,y:Math.floor(yMax/6)}, end: {x:xMax,y:Math.floor(yMax/6)}},
+               {type: "y", c: "pamenar", start: {x:Math.floor(xMax/2) + 20,y:Math.floor(yMax/6)+1}, end: {x:xMax,y:Math.floor(yMax/6)+1}},
+               {type: "y", c: "pamenar", start: {x:Math.floor(xMax/2) + 20,y:Math.floor(yMax/6)-10}, end: {x:Math.floor(xMax/2) + 22,y:Math.floor(yMax/6)-10}},
+               {type: "y", c: "pamenar", start: {x:Math.floor(xMax/2) + 20,y:Math.floor(yMax/6)-9}, end: {x:Math.floor(xMax/2) + 22,y:Math.floor(yMax/6)-9}},
+               {type: "y", c: "pamenar", start: {x:Math.floor(xMax/2) + 26,y:Math.floor(yMax/6)-10}, end: {x:Math.floor(xMax/2) + 28,y:Math.floor(yMax/6)-10}},
+               {type: "y", c: "pamenar", start: {x:Math.floor(xMax/2) + 26,y:Math.floor(yMax/6)-9}, end: {x:Math.floor(xMax/2) + 28,y:Math.floor(yMax/6)-9}},
+               {type: "y", c: "pamenar", start: {x:Math.floor(xMax/2) + 32,y:Math.floor(yMax/6)-10}, end: {x:xMax,y:Math.floor(yMax/6)-10}},
+               {type: "y", c: "pamenar", start: {x:Math.floor(xMax/2) + 32,y:Math.floor(yMax/6)-9}, end: {x:xMax,y:Math.floor(yMax/6)-9}}]
+  var zones = [{name: "Supermarket", x1: 0, x2: Math.floor(xMax/2) - 17, y1: 0, y2: Math.floor(yMax/3)},
+               {name: "Pamenar", x1: Math.floor(xMax/2) + 20, x2: xMax, y1: 0, y2: Math.floor(yMax/6)}]
+  var cars = [];
 
   var user = {
     x: 0,
@@ -38,7 +49,7 @@ $(document).ready(function(){
             return (w.start.x == this.x) && (this.y == w.end.y);
             break;
           case "down":
-            return (w.start.x == this.x)  && (this.y == w.start.y );
+            return (w.start.x == this.x)  && (this.y == w.start.y);
               break;
         }
       }
@@ -51,7 +62,7 @@ $(document).ready(function(){
             return (w.start.y == this.y + 1) && (this.x >= w.start.x) && (this. x < w.end.x);
             break; 
           case "right":
-            return (w.start.y == this.y) && (this.x == w.start.x);
+            return (w.start.y == this.y) && (this.x == w.start.x-1);
             break;
           case "left":
             return (w.start.y == this.y)  && (this.x == w.end.x);
@@ -97,6 +108,18 @@ $(document).ready(function(){
         $(`<div class="chat-notice warning">There's no one around to wave to...</div>`).appendTo("#chat-top").fadeOut(3000, function() {
           $(this).remove();
         });
+      }
+    },
+    isInZone: function(z){
+      return (this.x >= z.x1 && this.x <= z.x2 && this.y >= z.y1 && this.y <= z.y2);
+    },
+    zone: function(){
+      currentZones = zones.filter(z => this.isInZone(z));
+      if (currentZones.length > 0){
+        return `You are currently in <b>${currentZones[0].name}.</b>`;
+      }
+      else{
+        return `You are currently in <b>Kensington Market.</b>`;
       }
     }
   };
@@ -145,6 +168,7 @@ $(document).ready(function(){
 
 
     updateNeighbours();
+    $("#chat-header").html(`Thanks for social distancing, <b>${user.username}</b>. Welcome to the chat! ${user.zone()}`);
     redrawGame();
 
     e.preventDefault(); // prevent the default action (scroll / move caret)
@@ -184,29 +208,33 @@ $(document).ready(function(){
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.arc(i, j, r, 0, 2*Math.PI);
-    if (type == "other" && user.isNeighbour(coord)){
-      ctx.lineWidth = 3;
-      ctx.strokeStyle = "rgb(175,30,85)";
-    }
-    else{
-      ctx.strokeStyle = "#666";
-    }
-    ctx.stroke();
+
     if (type == "user"){
-      ctx.fillStyle = "#ffcc00";
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = "white";
+      ctx.stroke();
+      ctx.fillStyle = "red";
       ctx.fill();
     }
     if (type == "other"){
-      ctx.fillStyle = "rgb(90,200,220)";
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = user.isNeighbour(coord) ? "red" : "white";
+      ctx.stroke();
+      ctx.fillStyle = "blue";
       ctx.fill();
     }
 
     if (type == "road"){
-      ctx.fillStyle = "rgb(220,220,220)";
+      ctx.fillStyle = "#ffcc00";
       ctx.fill();
     }
 
     if (type == "supermarket"){
+      ctx.fillStyle = `rgb(215,140,90)`;
+      ctx.fill();
+    }
+
+    if (type == "pamenar"){
       ctx.fillStyle = `rgb(215,140,90)`;
       ctx.fill();
     }
@@ -221,11 +249,11 @@ $(document).ready(function(){
     ctx.clearRect(0, 0, width, height);
 
     // background cells
-    for (var y = 0; y < yMax; y++){
+    /*for (var y = 0; y < yMax; y++){
       for (var x = 0; x < xMax; x++){
         Cell({x: x, y: y}, 0);
       }
-    }
+    }*/
 
     // backgrounds....
     // road
@@ -288,7 +316,7 @@ $(document).ready(function(){
       username = prompt("Please enter your name"); 
     } 
     user.username = username;
-    $("#chat-header").html(`Thanks for social distancing, <b>${user.username}</b>. Welcome to the chat!`);
+    $("#chat-header").html(`Thanks for social distancing, <b>${user.username}</b>. Welcome to the chat! ${user.zone()}`);
   }
 
   setUser();
