@@ -1,0 +1,42 @@
+canvas{
+  background: black;
+  width: 700px;
+}
+
+#main{
+  display: flex;
+}
+
+#chat{
+  width: 300px;
+  height: 700px;
+  background: #fbfbfb=;
+  margin-left: 15px;
+  border: #e0e0e0 1px solid;
+}
+
+#chat-top{
+  background: white;
+}
+
+#chat-header, .chat-notice, .chat-message{
+  padding: 5px;
+  border-bottom: #e0e0e0 1px solid;
+  word-break: break-word;
+}
+
+.chat-notice{
+  font-style: italic;
+}
+
+.notice{
+  background: #f98a8a !important;
+}
+
+.success{
+  background: #8af9bd !important;
+}
+
+.warning{
+  background: #efefef !important;
+}
