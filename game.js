@@ -2,7 +2,7 @@ $(document).ready(function(){
 
   var pusher = new Pusher('699f7eb715ff1922a8f2', {
       cluster: 'us2',
-      forceTLS: true
+      encrypted: false
     });
 
     var channel = pusher.subscribe('all');
@@ -26,9 +26,10 @@ $(document).ready(function(){
   var yMax = 75;
   var n = 6.65;
   var r = 2;
-  var players = [{x:15, y:20, username: "Bob"}, {x:15, y:21, username: "Kate"}, {x:16, y:21, username: "Carl"}, {x:17, y:21, username: "Joan"}];
+  var players = [{x:15, y:20, username: "Bob"}, {x:25, y:25, username: "Bob"}, {x:15, y:21, username: "Kate"}, {x:16, y:21, username: "Carl"}, {x:17, y:21, username: "Joan"}];
   var neighbours = [];
   var cycle = 0;
+
 
   var road = [{start: {x:Math.floor(xMax/2),y:0}, end: {x:Math.floor(xMax/2),y:yMax}},
               {start: {x:Math.floor(xMax/2) - 10,y:0}, end: {x:Math.floor(xMax/2) - 10,y:yMax}},
@@ -50,8 +51,9 @@ $(document).ready(function(){
   var cars = [];
 
   var user = {
-    x: Math.floor(Math.random() * Math.floor(xMax-1)),
-    y: Math.floor(Math.random() * Math.floor(yMax-1)),
+    x: /*Math.floor(Math.random() * Math.floor(xMax-1))*/24,
+    y: /*Math.floor(Math.random() * Math.floor(yMax-1))*/24,
+    waved: false,
     id: makeid(6),
     username: null,
     isNeighbour: function(p){
@@ -115,6 +117,7 @@ $(document).ready(function(){
       return message;
     },
     wave: function(){
+      this.waved = true;
       $(".chat-notice").remove();
       cn = this.neighbours();
       if(cn.length > 0){
@@ -154,10 +157,10 @@ $(document).ready(function(){
   var intervalId;
 
   $(document).keydown(function(e) {
-    console.log(e.which);
     switch(e.which) {
       // movement
         case 37: // left
+          user.waved = false
           if(!user.blocked("left")) user.x--;
           if(user.x < 0){
             user.x = 0;
@@ -165,6 +168,7 @@ $(document).ready(function(){
           break;
 
         case 38: // up
+          user.waved = false
           if(!user.blocked("up")) user.y--;
           if(user.y < 0){
             user.y = 0;
@@ -172,6 +176,7 @@ $(document).ready(function(){
           break;
 
         case 39: // right
+          user.waved = false
           if(!user.blocked("right")) user.x++;
           if(user.x >= xMax){
             user.x = xMax-1;
@@ -179,6 +184,7 @@ $(document).ready(function(){
           break;
 
         case 40: // down
+          user.waved = false
           if(!user.blocked("down")) user.y++;
           if(user.y >= yMax){
             user.y = yMax-1;
@@ -190,11 +196,6 @@ $(document).ready(function(){
           user.wave()
         default: return; // exit this handler for other keys
     }
-
-
-    updateNeighbours();
-    $("#chat-header").html(`Thanks for social distancing, <b>${user.username}</b>. Welcome to the chat! ${user.zone()}`);
-    redrawGame();
 
     e.preventDefault(); // prevent the default action (scroll / move caret)
   });
@@ -225,6 +226,10 @@ $(document).ready(function(){
     else{
       $(".chat-notice").remove();
     }
+  }
+
+  function updateStatus(){
+    $("#chat-header").html(`Thanks for social distancing, <b>${user.username}</b>. Welcome to the chat! ${user.zone()}`);
   }
 
   function Cell(coord, type){
@@ -271,6 +276,8 @@ $(document).ready(function(){
   }
   
   function redrawGame(){
+    if (!user.waved) updateNeighbours();
+    updateStatus();
     ctx.clearRect(0, 0, width, height);
 
     // background cells
@@ -313,7 +320,8 @@ $(document).ready(function(){
     
 
     players.forEach(p => Cell(p, "other"));
-    Cell(user, "user")
+    Cell(user, "user");
+
   }
 
   function clock(){
