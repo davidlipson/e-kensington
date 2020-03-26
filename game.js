@@ -1,14 +1,13 @@
 $(document).ready(function(){
 
-  var pusher = new Pusher('699f7eb715ff1922a8f2', {
-      cluster: 'us2',
-      encrypted: false
-    });
+  var pusher = new Pusher("699f7eb715ff1922a8f2");
 
-    var channel = pusher.subscribe('all');
-    channel.bind('client-waveNotification', function(data) {
-      console.log(data);
-    });
+  var channel = pusher.subscribe('wave-channel');
+  channel.bind('client-wave', function(data) {
+    console.log(data);
+  });
+
+  channel.trigger("client-wave", {test: "hello"});
 
 
   function makeid(length) {
@@ -122,7 +121,7 @@ $(document).ready(function(){
       cn = this.neighbours();
       if(cn.length > 0){
         // WAVE HERE
-        cn.forEach(c => channel.trigger("client-waveNotification", {fromId: this.id, fromName: this.username, toName: c.username}))
+        //cn.forEach(c => channel.trigger("client-waveNotification", {fromId: this.id, fromName: this.username, toName: c.username}))
         //fake bit
         //cn.forEach(n => $(`<div class="chat-message"> ${this.username} waved at ${n.username}.</div>`).appendTo("#chat-body").fadeOut(5000, function() {$(this).remove();}));
 
