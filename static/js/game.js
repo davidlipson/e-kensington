@@ -1,14 +1,5 @@
 $(document).ready(function(){
 
-  var pusher = new Pusher("699f7eb715ff1922a8f2");
-
-  var channel = pusher.subscribe('wave-channel');
-  channel.bind('clxqwave', function(data) {
-    console.log(data);
-  });
-
-  channel.trigger("client-wave", {test: "hello"});
-
 
   function makeid(length) {
    var result           = '';
@@ -18,17 +9,51 @@ $(document).ready(function(){
       result += characters.charAt(Math.floor(Math.random() * charactersLength));
    }
    return result;
-}
+  }
+
+  var players = {}
+
+  var current_id = makeid(8);
+  
+  var pusher = new Pusher("699f7eb715ff1922a8f2", {
+      cluster: 'us2',
+      forceTLS: true
+    });
+
+  var channel = pusher.subscribe('my-channel');
+  //var personal = pusher.subscribe(current_id);
+
+  channel.bind('wave', function(data) {
+    addMessage(`${data.fromID == current_id ? "You" : data.fromUsername} waved at ${data.toID == current_id ? "you" : data.toUsername}!`)
+  });
+
+  channel.bind('move', function(data) {
+    if (data.id != current_id){
+      players[data.id] = data;
+    }
+    console.log(players)
+    console.log(data);
+  });
+
+  channel.bind('leaving', function(data) {
+    alert(data.id);
+  });
+
+  function addMessage(m){
+    if($(".chat-message").length > 20){
+      $(".chat-message").first().remove();
+    }
+    $(`<div class="chat-message">${m}</div>`).appendTo("#chat-body");
+  }
+  
   var width;
   var height;
   var xMax = 75;
   var yMax = 75;
   var n = 6.65;
   var r = 2;
-  var players = [{x:15, y:20, username: "Bob"}, {x:25, y:25, username: "Bob"}, {x:15, y:21, username: "Kate"}, {x:16, y:21, username: "Carl"}, {x:17, y:21, username: "Joan"}];
-  var neighbours = [];
-  var cycle = 0;
 
+  var cycle = 0;
 
   var road = [{start: {x:Math.floor(xMax/2),y:0}, end: {x:Math.floor(xMax/2),y:yMax}},
               {start: {x:Math.floor(xMax/2) - 10,y:0}, end: {x:Math.floor(xMax/2) - 10,y:yMax}},
@@ -50,11 +75,12 @@ $(document).ready(function(){
   var cars = [];
 
   var user = {
-    x: /*Math.floor(Math.random() * Math.floor(xMax-1))*/24,
-    y: /*Math.floor(Math.random() * Math.floor(yMax-1))*/24,
+    x: Math.floor(Math.random() * Math.floor(xMax-1)),
+    y: Math.floor(Math.random() * Math.floor(yMax-1)),
     waved: false,
-    id: makeid(6),
+    id: current_id,
     username: null,
+    blank: 0,
     isNeighbour: function(p){
       return (p.x <= this.x + 1) && (p.x >= this.x - 1) 
         && (p.y >= this.y - 1) && (p.y <= this.y + 1);
@@ -94,23 +120,24 @@ $(document).ready(function(){
       }
     },
     neighbours: function(){
-      return players.filter(p => this.isNeighbour(p));
+      return Object.keys(players).filter(p => this.isNeighbour(players[p]));
     },
     blocked: function(direction){
       return walls.filter(w => this.isWallNeighbour(w, direction)).length > 0;
     },
     neighbourString: function(){
-      switch(neighbours.length){
+      var neigh = this.neighbours();
+      switch(neigh.length){
         case 0:
           message = `No one`;
         case 1:
-          message = `${neighbours[0].username}`;
+          message = `${players[neigh[0]].username}`;
           break;
         case 2:
-          message = `${neighbours[0].username} and ${neighbours[1].username}`;
+          message = `${players[neigh[0]].username} and ${players[neigh[1]].username}`;
           break;
         default:
-          message = `${neighbours[0].username}, ${neighbours[1].username}, and ${neighbours.length - 2} other${neighbours.length - 2 > 1 ? "s" : ""}`;
+          message = `${players[neigh[0]].username}, ${players[neigh[1]].username}, and ${neigh.length - 2} other${neigh.length - 2 > 1 ? "s" : ""}`;
           break;
       }
       return message;
@@ -120,10 +147,10 @@ $(document).ready(function(){
       $(".chat-notice").remove();
       cn = this.neighbours();
       if(cn.length > 0){
+
+        
         // WAVE HERE
-        //cn.forEach(c => channel.trigger("client-waveNotification", {fromId: this.id, fromName: this.username, toName: c.username}))
-        //fake bit
-        //cn.forEach(n => $(`<div class="chat-message"> ${this.username} waved at ${n.username}.</div>`).appendTo("#chat-body").fadeOut(5000, function() {$(this).remove();}));
+        cn.forEach(c => $.post("/wave", {fromID: this.id, fromUsername: this.username,  toID: players[c].id, toUsername: players[c].username}))
 
         $(`<div class="chat-notice success">Sent a wave to ${this.neighbourString()}</div>`).appendTo("#chat-top").fadeOut(3000, function() {
           $(this).remove();
@@ -159,48 +186,70 @@ $(document).ready(function(){
     switch(e.which) {
       // movement
         case 37: // left
+          user.blank = 0;
           user.waved = false
-          if(!user.blocked("left")) user.x--;
-          if(user.x < 0){
-            user.x = 0;
+          if(!user.blocked("left")){
+            user.x--;
+            if(user.x < 0){
+              user.x = 0;
+            }
+            notifyMove();
           } 
           break;
 
         case 38: // up
+          user.blank = 0;
           user.waved = false
-          if(!user.blocked("up")) user.y--;
-          if(user.y < 0){
-            user.y = 0;
+          if(!user.blocked("up")){
+            user.y--;
+            if(user.y < 0){
+              user.y = 0;
+            }
+            notifyMove();
           }
+          
           break;
 
         case 39: // right
+          user.blank = 0;
           user.waved = false
-          if(!user.blocked("right")) user.x++;
-          if(user.x >= xMax){
-            user.x = xMax-1;
+          if(!user.blocked("right")){
+            user.x++;
+            if(user.x >= xMax){
+              user.x = xMax-1;
+            }
+            notifyMove();
           }
           break;
 
         case 40: // down
+          user.blank = 0;
           user.waved = false
-          if(!user.blocked("down")) user.y++;
-          if(user.y >= yMax){
-            user.y = yMax-1;
+          if(!user.blocked("down")){
+            user.y++;
+            if(user.y >= yMax){
+              user.y = yMax-1;
+            }
+            notifyMove();
           }
           break;
 
        // actions 
         case 87: // wave
-          user.wave()
+          user.blank = 0;
+          if (!user.waved) user.wave()
         default: return; // exit this handler for other keys
     }
 
     e.preventDefault(); // prevent the default action (scroll / move caret)
   });
+
+  function notifyMove(){
+    $.post("/move", {id: user.id, x: user.x, y: user.y, username: user.username, blank: 0});
+  }
   
   function updateNeighbours(){
-    neighbours = user.neighbours();
+    var neighbours = user.neighbours();
     if (neighbours.length > 0){
 
       message = user.neighbourString();
@@ -249,7 +298,7 @@ $(document).ready(function(){
       ctx.lineWidth = 3;
       ctx.strokeStyle = user.isNeighbour(coord) ? "red" : "white";
       ctx.stroke();
-      ctx.fillStyle = "blue";
+      ctx.fillStyle = `rgba(0,0,255,${(100-coord.blank)/100})`;
       ctx.fill();
     }
 
@@ -273,8 +322,16 @@ $(document).ready(function(){
       ctx.fill();
     }
   }
+
+  function cleanPlayers(){
+    Object.keys(players).forEach(function(p){
+      players[p].blank++;
+      if(players[p].blank >= 100) delete players[p];
+    });
+  }
   
   function redrawGame(){
+    cleanPlayers();
     if (!user.waved) updateNeighbours();
     updateStatus();
     ctx.clearRect(0, 0, width, height);
@@ -317,14 +374,15 @@ $(document).ready(function(){
     });
 
     
-
-    players.forEach(p => Cell(p, "other"));
+    Object.keys(players).forEach(p => Cell(players[p], "other"));
     Cell(user, "user");
 
   }
 
   function clock(){
     cycle++;
+    user.blank++
+    if (cycle % 25 == 0 && user.blank <= 500) notifyMove(); 
     redrawGame();
   }
   

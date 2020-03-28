@@ -13,6 +13,7 @@ canvas{
   background: #fbfbfb=;
   margin-left: 15px;
   border: #e0e0e0 1px solid;
+  overflow: scroll;
 }
 
 #chat-top{
@@ -23,6 +24,7 @@ canvas{
   padding: 5px;
   border-bottom: #e0e0e0 1px solid;
   word-break: break-word;
+  margin-top: 0.7;
 }
 
 .chat-notice{
